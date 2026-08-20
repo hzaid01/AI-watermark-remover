@@ -5,7 +5,8 @@
   "main": "dist-electron/main.js",
   "scripts": {
     "dev": "vite",
-    "dev:electron": "concurrently -k -r \"npm run dev\" \"wait-on tcp:5173 && electron .\"",
+    "dev:electron": "npm run build:electron && concurrently -k -r \"npm run dev\" \"wait-on tcp:5173 && electron .\"",
+    "start": "npm run build:electron && electron .",
     "build:react": "tsc -b && vite build",
     "build:electron": "tsc -p tsconfig.electron.json",
     "build": "npm run build:react && npm run build:electron",

@@ -146,8 +146,16 @@ function createWindow(port: number) {
   });
 
   if (isDev) {
-    mainWindow.loadURL('http://localhost:5173');
-    // mainWindow.webContents.openDevTools({ mode: 'detach' });
+    http.get('http://localhost:5173', () => {
+      mainWindow?.loadURL('http://localhost:5173');
+    }).on('error', () => {
+      const distIndex = path.join(__dirname, '../dist/index.html');
+      if (fs.existsSync(distIndex)) {
+        mainWindow?.loadFile(distIndex);
+      } else {
+        mainWindow?.loadURL('http://localhost:5173');
+      }
+    });
   } else {
     mainWindow.loadFile(path.join(__dirname, '../dist/index.html'));
   }
