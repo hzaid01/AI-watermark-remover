@@ -1,0 +1,28 @@
+# Node
+node_modules/
+dist/
+dist-electron/
+release/
+build_temp/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+pip-log.txt
+pip-delete-this-directory.txt
+.venv
+
+# Temporary cloned repo
+upstream-watermarks-remover/
+
+# OS & IDE
+.DS_Store
+Thumbs.db
+*.log
+.vscode/
+.idea/

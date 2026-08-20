@@ -1,0 +1,1 @@
+{"root":["./src/app.tsx","./src/main.tsx","./src/components/degradedbanner.tsx","./src/components/inspectiondrawer.tsx","./src/components/pastetexttab.tsx","./src/components/settingsmodal.tsx","./src/components/titlebar.tsx","./src/components/uploadfiletab.tsx","./src/types/index.ts","./src/utils/cleanerapi.ts","./src/utils/filevalidation.ts"],"version":"5.9.3"}
