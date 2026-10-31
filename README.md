@@ -1,142 +1,132 @@
 # Document & Text Cleaner
 
-Production-grade Windows desktop application built with **Electron + React + Tailwind CSS** (JARVIS dark-tech stack) wrapping the core [watermarks-remover](https://github.com/guillaumemeyer/watermarks-remover) Python sanitization engine.
+Document & Text Cleaner is a Windows desktop application for inspecting and cleaning supported documents and text. It combines an Electron, React, and TypeScript interface with a local Python service. Core cleaning runs on your computer; optional text rewriting connects to a local Ollama instance.
 
----
+## Features
 
-## Key Features
+- Inspect and clean supported files, with a report of detected findings and applied changes.
+- Remove invisible Unicode characters and selected text watermarking artifacts.
+- Scrub metadata and AI-related properties from supported document formats.
+- Optionally rewrite pasted text with a locally installed Ollama model.
+- Preserve the original file and save a `.cleaned` copy by default.
+- Run the Python service on loopback (`127.0.0.1`) by default.
 
-- **Layer A Sanitization (Default & Offline)**:
-  - Strips invisible Unicode steganography (zero-width spaces `U+200B`, `U+FEFF`, `U+200C`, `U+200D`, `U+2060`, etc.).
-  - Strips bidirectional formatting overrides (`LRE`, `RLE`, `LRO`, `RLO`).
-  - Normalizes confusable homoglyph spaces (`U+00A0`, `U+2000`–`U+200A`, etc.) to standard spaces.
-  - Scrubs document metadata and properties (Word `docProps/core.xml`, `docProps/app.xml`, `customXml/`, OpenDocument `meta.xml`, HTML AI `<meta>` tags and attributes, Markdown YAML frontmatter AI keys).
-- **Layer B Rewrite Mode (Local Ollama LLM)**:
-  - Defeats statistical / token-sampling watermarks by rewriting text.
-  - Privacy-first: connects **only** to local Ollama (`http://127.0.0.1:11434`). No remote cloud APIs, no telemetry, no tracking.
-  - Automatically discovers installed local Ollama models (`qwen`, `llama`, `gemma`, `mistral`, etc.).
-- **Supported File Types**:
-  - `DOCX` (Word document metadata & customXml properties)
-  - `PDF` (PDF metadata strip via `exiftool` + `qpdf`)
-  - `ODT` (OpenDocument text `meta.xml`)
-  - `HTML` / `HTM` (AI meta tags, JSON-LD, `data-ai*` attributes, Layer A body)
-  - `Markdown` / `MD` (YAML frontmatter AI keys + Layer A body)
-  - `TXT` (Plaintext Layer A zero-width and homoglyphs)
-- **Strict Format Guard (Client-Side Rejection)**:
-  - Images (`PNG`, `JPG`, `WebP`, `SVG`, `GIF`), Audio/Video, `PPTX`, `XLSX`, and `EPUB` are rejected before any API call with:
-    > *"This file type is not supported. Only DOCX, PDF, ODT, HTML, Markdown, and TXT are allowed."*
+Cleaning reduces selected metadata and watermark signals; it cannot guarantee that every watermark or provenance signal has been detected or removed.
 
----
+## Supported desktop file types
 
-## Architecture & Privacy Guarantee
+| Format | Desktop support |
+| --- | --- |
+| DOCX | Document properties, custom metadata, and supported text cleanup |
+| PDF | Metadata cleanup; install `qpdf` and `exiftool` for the strongest available cleanup |
+| ODT | Document metadata and supported text cleanup |
+| HTML / HTM | AI-related metadata and supported text cleanup |
+| Markdown / MD | Selected YAML frontmatter metadata and supported text cleanup |
+| TXT | Invisible Unicode and supported text cleanup |
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                 Document & Text Cleaner UI                  │
-│               (React + Tailwind + TypeScript)               │
-└──────────────┬───────────────────────────────┬──────────────┘
-               │ (Local IPC / Loopback HTTP)   │
-               ▼                               ▼
-┌───────────────────────────────┐ ┌───────────────────────────┐
-│     Python Core Service       │ │       Local Ollama        │
-│   (127.0.0.1:8765 stdlib)     │ │   (127.0.0.1:11434)       │
-│  - text_unicode.py            │ │  - Local LLM Models       │
-│  - container_meta.py          │ │  - Rewrite Mode (Layer B) │
-│  - rewrite_text.py            │ └───────────────────────────┘
-└───────────────────────────────┘
-```
+Other formats are rejected by the desktop app. The backend contains additional inspection and cleaning code, but that does not make those formats available in the desktop file picker.
 
-> **Privacy Guarantee**: Everything runs locally on your machine. No file or text ever leaves your system. Network calls are strictly restricted to loopback interfaces `127.0.0.1` (local backend) and `127.0.0.1:11434` (Ollama).
+## Requirements
 
----
+- Windows 10 or later (the packaged installer targets Windows x64).
+- Node.js 20 LTS or later and npm for development and packaging.
+- Python 3.10 or later for running the backend from source and building its standalone executable.
+- Ollama is optional and is needed only for Rewrite Mode.
+- `qpdf` and `exiftool` are optional system tools that improve PDF cleanup.
 
-## PyInstaller Backend Binary
+## Install and run
 
-The core backend (`service/scripts/server.py`) is compiled into a standalone, frozen Windows executable (`server.exe`) stored in `resources/bin/`.
+Install the JavaScript dependencies:
 
-### How It Is Built
-Run the automated build script:
-```bash
-python scripts/build_backend.py
-```
-This command:
-1. Validates `service/scripts/server.py`.
-2. Packages standard library modules using `--onefile` into a single self-contained executable.
-3. Excludes heavy optional packages (such as `torch`, `torchvision`, `numpy`, `transformers`, `diffusers`, etc.) keeping the binary lightweight (~15MB).
-4. Moves the resulting binary to `resources/bin/server.exe`.
-
----
-
-## Optional PDF Tools: `qpdf` & `exiftool`
-
-PDF metadata cleaning relies on system tools for structural sanitization:
-- **`exiftool`**: Strips document metadata and info dictionaries.
-- **`qpdf`**: Performs structural linearizing / re-writing so metadata objects are permanently purged.
-
-### Degraded PDF Mode
-If `qpdf` or `exiftool` are not detected on the system `PATH`, the application displays a non-blocking amber warning banner:
-> *"PDF cleaning will be degraded (metadata may remain recoverable) — install qpdf and exiftool for a full clean"*
-
-Direct download links:
-- [Download qpdf](https://github.com/qpdf/qpdf/releases)
-- [Download exiftool](https://exiftool.org/)
-
----
-
-## Local Ollama Auto-Detection
-
-1. On launch (and when opening Preferences), the app queries `GET http://127.0.0.1:11434/api/tags`.
-2. If Ollama is running, it parses the installed models and populates the model selection dropdown.
-3. If Ollama is not running, Rewrite Mode is disabled with the notice:
-   > *"Rewrite mode requires Ollama running locally with at least one model installed. Install from ollama.com and pull a model (e.g. `ollama pull llama3.2`), then restart this app."*
-
----
-
-## Development & Build Commands
-
-### 1. Install Dependencies
 ```bash
 npm install
 ```
 
-### 2. Run in Development Mode
-```bash
-# Start Vite development server
-npm run dev
+Start the Vite frontend by itself:
 
-# Or launch full Electron development environment
+```bash
+npm run dev
+```
+
+Start the full Electron development app (the backend is started by Electron):
+
+```bash
 npm run dev:electron
 ```
 
-### 3. Build Backend Binary
+When running from source, Electron uses the Python backend script if a local `resources/bin/server.exe` is not available. Make sure Python is on `PATH`.
+
+## Build
+
+Install the Python build dependency and create the standalone backend:
+
 ```bash
+python -m pip install -r requirements.txt
 npm run build:backend
 ```
 
-### 4. Build Frontend & Electron Main
+Build the frontend and Electron main process:
+
 ```bash
 npm run build
 ```
 
-### 5. Package Windows Installer & Portable Executable
+Create the Windows x64 installer and portable executable:
+
 ```bash
 npm run dist
 ```
-The output installer `.exe` will be located in the `release/` directory.
 
-### 6. Run Test Suite
+Build outputs are written to `release/`. The backend builder produces a Windows executable when run on Windows.
+
+## Python dependencies
+
+The core Python backend uses only the Python standard library. The root [`requirements.txt`](./requirements.txt) contains PyInstaller for creating the standalone backend executable.
+
+Optional research and model integrations have separate environment requirements. Install them only when you need the corresponding integration:
+
+- CtrlRegen: `service/scripts/requirements-ctrlregen.txt`
+- MarkDiffusion: `service/scripts/requirements-markdiffusion.txt`
+- MarkLLM: `service/scripts/requirements-markllm.txt`
+- Reverse SynthID scorer: `service/scripts/requirements-synthid-scorer.txt`
+
+These profiles may install large machine-learning packages and are intentionally not combined with the core or build requirements. Use the associated setup scripts in `service/scripts/` to configure the optional integrations.
+
+## Local service
+
+The Python service can also be run directly:
+
 ```bash
-python tests/test_cleaner_suite.py
+python service/scripts/server.py
 ```
 
----
+By default it listens on `127.0.0.1:8765`. Set `WATERMARKS_SERVER_HOST` and `WATERMARKS_SERVER_PORT`, or pass `--host` and `--port`, to change the bind address and port. The service provides health, capability, inspection, detection, cleaning, and OpenAPI endpoints. See the service's `/openapi.json` endpoint for the API schema.
 
-## Output Naming Convention
+Keep the service on loopback unless you understand the security implications of exposing it to other machines. If you configure a non-loopback bind address, protect access appropriately; the service supports an optional bearer API key through `WATERMARKS_SERVER_API_KEY` or `--api-key`.
 
-When saving cleaned files, the original file is never overwritten by default:
-- `document.docx` $\rightarrow$ `document.cleaned.docx`
-- `report.pdf` $\rightarrow$ `report.cleaned.pdf`
-- `article.md` $\rightarrow$ `article.cleaned.md`
-- `page.html` $\rightarrow$ `page.cleaned.html`
+## Ollama Rewrite Mode
 
-Custom destination folders can be configured in the **Preferences** panel.
+Rewrite Mode is optional and uses Ollama's local HTTP API. Install and start Ollama, then download a model, for example:
+
+```bash
+ollama pull llama3.2
+```
+
+The app checks the configured Ollama URL (default `http://127.0.0.1:11434`) for installed models. Rewriting is best-effort and does not guarantee removal of statistical or token-sampling watermarks.
+
+## PDF tools
+
+PDF cleanup may be degraded when `qpdf` or `exiftool` is unavailable. Install them and ensure they are on `PATH`:
+
+- [qpdf releases](https://github.com/qpdf/qpdf/releases)
+- [ExifTool](https://exiftool.org/)
+
+The app displays a warning when these tools are not detected. PDF cleanup behavior depends on which tools are available.
+
+## Privacy
+
+The app and core backend process files locally. The desktop app contacts the local backend over loopback and, when Rewrite Mode is used, sends text to the configured Ollama endpoint. Use a local Ollama instance if you want rewriting to remain on your device. Optional integrations may download models or communicate with their configured services; review their setup and configuration before enabling them.
+
+## License
+
+The package metadata declares the MIT license. Confirm the license terms with the project maintainer before redistributing.
