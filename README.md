@@ -1,10 +1,12 @@
 # Document & Text Cleaner
 
-Document & Text Cleaner is a Windows desktop application for inspecting and cleaning supported documents and text. It combines an Electron, React, and TypeScript interface with a local Python service. Core cleaning runs on your computer; optional text rewriting connects to a local Ollama instance.
+Document & Text Cleaner is a desktop application for inspecting and cleaning supported documents and text. It combines an Electron, React, and TypeScript interface with a local Python service. Core cleaning runs on your computer; optional text rewriting connects to a local Ollama instance.
 
 ## Download
 
-[Download the Windows installer from GitHub Releases](https://github.com/hzaid01/AI-watermark-remover/releases/latest).
+- [Windows x64 installer](https://github.com/hzaid01/AI-watermark-remover/releases/latest)
+- [Linux x64 Debian/Ubuntu package](https://github.com/hzaid01/AI-watermark-remover/releases/latest/download/Document.Text.Cleaner-1.0.0-amd64.deb)
+- Linux x64 AppImage: build it locally using the Linux steps below.
 
 ## Features
 
@@ -32,7 +34,7 @@ Other formats are rejected by the desktop app. The backend contains additional i
 
 ## Requirements
 
-- Windows 10 or later (the packaged installer targets Windows x64).
+- Windows 10 or later or a supported Linux x64 distribution.
 - Node.js 20 LTS or later and npm for development and packaging.
 - Python 3.10 or later for running the backend from source and building its standalone executable.
 - Ollama is optional and is needed only for Rewrite Mode.
@@ -52,24 +54,42 @@ Start the full Electron development app (the backend is started by Electron):
 
     npm run dev:electron
 
-When running from source, Electron uses the Python backend script if a local resources/bin/server.exe is not available. Make sure Python is on PATH.
+When running from source, Electron uses the platform-specific backend binary if available, or runs the Python backend script. Make sure Python is on PATH when using the script fallback.
 
 ## Build
 
-Install the Python build dependency and create the standalone backend:
+Create a Python virtual environment and install the backend build dependency:
 
-    python -m pip install -r requirements.txt
+Windows:
+
+    py -m venv .venv
+    .venv\Scripts\python -m pip install -r requirements.txt
+    npm run build:backend
+
+Linux:
+
+    python3 -m venv .venv
+    .venv/bin/python -m pip install -r requirements.txt
     npm run build:backend
 
 Build the frontend and Electron main process:
 
     npm run build
 
-Create the Windows x64 installer and portable executable:
+Create the Windows x64 installer and portable executable (run on Windows):
 
     npm run dist
 
-Build outputs are written to release/. The backend builder produces a Windows executable when run on Windows.
+Create Linux x64 AppImage and Debian packages (run on Linux):
+
+    npm run build:backend
+    npm run dist:linux
+
+Build outputs are written to `release/`. Build the backend on the same operating system as the target package: the Windows app uses `resources/bin/server.exe`, while Linux packages include the native `resources/bin/server` backend.
+
+The AppImage can be run directly after making it executable. Install the Debian package with your distribution's package manager, for example:
+
+    sudo apt install "./release/Document & Text Cleaner-1.0.0-amd64.deb"
 
 ## Python dependencies
 

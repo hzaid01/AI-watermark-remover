@@ -76,9 +76,13 @@ async function startBackend(): Promise<number> {
   console.log(`[Main] Starting Python backend on 127.0.0.1:${backendPort}...`);
 
   const rootPath = app.getAppPath();
-  const exePath = path.join(process.resourcesPath, 'bin', 'server.exe');
-  const localExePath = path.join(rootPath, 'resources', 'bin', 'server.exe');
-  const pythonScript = path.join(rootPath, 'service', 'scripts', 'server.py');
+  const backendName = process.platform === 'win32' ? 'server.exe' : 'server';
+  const packagedBackendPath = path.join(process.resourcesPath, 'bin', backendName);
+  const localBackendPath = path.join(rootPath, 'resources', 'bin', backendName);
+  const pythonScript = isDev
+    ? path.join(rootPath, 'service', 'scripts', 'server.py')
+    : path.join(process.resourcesPath, 'service', 'scripts', 'server.py');
+  const pythonCommand = process.platform === 'win32' ? 'python' : 'python3';
 
   const env = {
     ...process.env,
@@ -88,15 +92,15 @@ async function startBackend(): Promise<number> {
     PYTHONUNBUFFERED: '1',
   };
 
-  if (!isDev && fs.existsSync(exePath)) {
-    console.log(`[Main] Spawning frozen binary from resources: ${exePath}`);
-    pythonProcess = spawn(exePath, ['--host', '127.0.0.1', '--port', String(backendPort)], { env });
-  } else if (fs.existsSync(localExePath)) {
-    console.log(`[Main] Spawning local binary: ${localExePath}`);
-    pythonProcess = spawn(localExePath, ['--host', '127.0.0.1', '--port', String(backendPort)], { env });
+  if (!isDev && fs.existsSync(packagedBackendPath)) {
+    console.log(`[Main] Spawning frozen binary from resources: ${packagedBackendPath}`);
+    pythonProcess = spawn(packagedBackendPath, ['--host', '127.0.0.1', '--port', String(backendPort)], { env });
+  } else if (isDev && fs.existsSync(localBackendPath)) {
+    console.log(`[Main] Spawning local binary: ${localBackendPath}`);
+    pythonProcess = spawn(localBackendPath, ['--host', '127.0.0.1', '--port', String(backendPort)], { env });
   } else {
-    console.log(`[Main] Spawning python script: ${pythonScript}`);
-    pythonProcess = spawn('python', [pythonScript, '--host', '127.0.0.1', '--port', String(backendPort)], {
+    console.log(`[Main] Spawning Python backend: ${pythonScript}`);
+    pythonProcess = spawn(pythonCommand, [pythonScript, '--host', '127.0.0.1', '--port', String(backendPort)], {
       env,
       cwd: path.dirname(pythonScript),
     });

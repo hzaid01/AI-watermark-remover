@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build script to freeze service/scripts/server.py as a standalone Windows executable.
+"""Build script to freeze service/scripts/server.py as a standalone executable.
 
 This bundles only the Python stdlib-first core cleaning engine without torch,
 markllm, markdiffusion, or ctrlregen.
@@ -18,13 +18,21 @@ OUTPUT_DIR = ROOT_DIR / "resources" / "bin"
 
 
 def ensure_pyinstaller() -> bool:
-    try:
-        import PyInstaller  # type: ignore
+    result = subprocess.run(
+        [sys.executable, "-m", "PyInstaller", "--version"],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        check=False,
+    )
+    if result.returncode == 0:
         return True
-    except ImportError:
-        print("[*] PyInstaller not found. Installing via pip...")
-        r = subprocess.run([sys.executable, "-m", "pip", "install", "pyinstaller"], check=False)
-        return r.returncode == 0
+
+    print(
+        "Error: PyInstaller is not available in this Python environment. "
+        "Install the project requirements in your Python environment first.",
+        file=sys.stderr,
+    )
+    return False
 
 
 def build() -> int:

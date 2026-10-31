@@ -4,6 +4,7 @@ dist/
 dist-electron/
 release/
 build_temp/
+*.tsbuildinfo
 
 # Python
 __pycache__/
@@ -19,6 +20,9 @@ pip-delete-this-directory.txt
 
 # Temporary cloned repo
 upstream-watermarks-remover/
+
+# Platform-specific PyInstaller backend binary
+resources/bin/server
 
 # OS & IDE
 .DS_Store

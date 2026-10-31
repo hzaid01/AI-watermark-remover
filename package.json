@@ -1,7 +1,7 @@
 {
   "name": "document-and-text-cleaner",
   "version": "1.0.0",
-  "description": "Production-ready Windows desktop app for stripping AI provenance, invisible watermarks, zero-width characters, and document metadata.",
+  "description": "Desktop app for inspecting and cleaning document metadata and selected watermark signals.",
   "main": "dist-electron/main.js",
   "scripts": {
     "dev": "vite",
@@ -11,8 +11,9 @@
     "build:electron": "tsc -p tsconfig.electron.json",
     "build": "npm run build:react && npm run build:electron",
     "dist": "npm run build && electron-builder",
+    "dist:linux": "npm run build && electron-builder --linux AppImage deb",
     "dist:dir": "npm run build && electron-builder --dir",
-    "build:backend": "python scripts/build_backend.py"
+    "build:backend": "node scripts/build_backend_runner.js"
   },
   "keywords": [
     "watermark-remover",
@@ -64,14 +65,15 @@
         "from": "service/scripts",
         "to": "service/scripts",
         "filter": ["**/*"]
-      },
-      {
-        "from": "resources/bin",
-        "to": "bin",
-        "filter": ["**/*"]
       }
     ],
     "win": {
+      "extraResources": [
+        {
+          "from": "resources/bin/server.exe",
+          "to": "bin/server.exe"
+        }
+      ],
       "target": [
         {
           "target": "nsis",
@@ -83,6 +85,21 @@
         }
       ],
       "artifactName": "${productName}-Setup-${version}.${ext}"
+    },
+    "linux": {
+      "extraResources": [
+        {
+          "from": "resources/bin/server",
+          "to": "bin/server"
+        }
+      ],
+      "category": "Utility",
+      "maintainer": "hzaid01",
+      "target": [
+        "AppImage",
+        "deb"
+      ],
+      "artifactName": "${productName}-${version}-${arch}.${ext}"
     },
     "nsis": {
       "oneClick": false,
