@@ -2,6 +2,10 @@
 
 Document & Text Cleaner is a Windows desktop application for inspecting and cleaning supported documents and text. It combines an Electron, React, and TypeScript interface with a local Python service. Core cleaning runs on your computer; optional text rewriting connects to a local Ollama instance.
 
+## Download
+
+[Download the Windows installer from GitHub Releases](https://github.com/hzaid01/AI-watermark-remover/releases/latest).
+
 ## Features
 
 - Inspect and clean supported files, with a report of detected findings and applied changes.
